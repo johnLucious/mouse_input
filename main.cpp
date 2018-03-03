@@ -26,6 +26,8 @@ char *fbp = 0;
 int fbfd = 0;
 long int screensize = 0;
 long int location = 0;
+const char *mDevice = "/dev/input/mice";	//~ input mouse driver
+int fd;
 
 typedef struct{
     int x, y;
@@ -55,7 +57,7 @@ void swap(int* a, int* b);
 void printPixel(int x, int y, int colorR, int colorG, int colorB);
 point setPoint(int x, int y);
 void drawLine(point p1, point p2, int thickness, int colorR, int colorG, int colorB);
-FdMice mouseController();
+Mice mouseController();
 void setPointer(int x, int y);
 void startDevice();
 void init();
@@ -77,9 +79,7 @@ int main(){
 	startDevice();
 	int xMouse = 0, yMouse = 0;
 	while(1){
-        FdMice mouseCont = mouseController();
-        Mice pMouse = mouseCont.mice;
-        int fd = mouseCont.fd;
+        Mice pMouse = mouseController();
         clearScreen();
 		xMouse = (xMouse+pMouse.coorMouse.x > WIDTH) ?WIDTH :((xMouse+pMouse.coorMouse.x < 0) ?0 :(xMouse+pMouse.coorMouse.x));
 		yMouse = (yMouse+pMouse.coorMouse.y > HEIGHT) ?HEIGHT :((yMouse+pMouse.coorMouse.y < 0) ?0 :(yMouse+pMouse.coorMouse.y));
@@ -112,12 +112,14 @@ point setPoint(int x, int y){
     return p;
 }
 
-FdMice mouseController(){
-	int fd, bytes;
+Mice mouseController(){
+	int bytes;
 	unsigned char data[3];
-	const char *mDevice = "/dev/input/mice";	//~ input mouse driver
 	
-	fd = open(mDevice, O_RDWR);
+	
+	   fd = open(mDevice, O_RDWR);
+
+	printf("fd: %d",fd);
 	if (fd == -1){
 		printf("Hello Error");
 		//~ return -1;
@@ -126,6 +128,7 @@ FdMice mouseController(){
 	signed char x, y;
 	
 	bytes = read(fd, data, sizeof(data));
+
 	if (bytes > 0){
 		click = data[0] & 0x1;				//~ Left click
 		x = data[1];						//~ x coordinate
@@ -135,10 +138,7 @@ FdMice mouseController(){
 	Mice M;
 	M.coorMouse = setPoint(x, -y);
 	M.clicked = click; 
-    FdMice fdmice;
-    fdmice.mice = M;
-    fdmice.fd = fd;
-    return (fdmice);
+    return (M);
 }
 
 void swap(int* a, int* b){
@@ -179,6 +179,7 @@ void init(){
 
     // Map the device to memory
     fbp = (char *)mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
+
     if (atoi(fbp) == -1) {
         perror("Error: failed to map framebuffer device to memory");
         exit(4);
