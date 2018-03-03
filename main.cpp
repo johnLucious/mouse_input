@@ -40,31 +40,57 @@ typedef struct{
 	point coorMouse;
 	int clicked;
 }Mice;
+typedef struct {
+    int cR;
+    int cG;
+    int cB;
+} RGB;
+
+typedef struct {
+    int fd;
+    Mice mice;
+} FdMice;
 
 void swap(int* a, int* b);
 void printPixel(int x, int y, int colorR, int colorG, int colorB);
 point setPoint(int x, int y);
 void drawLine(point p1, point p2, int thickness, int colorR, int colorG, int colorB);
-Mice mouseController();
+FdMice mouseController();
 void setPointer(int x, int y);
 void startDevice();
 void init();
 void getPixelColor(int x, int y, int *rColor, int *gColor, int *bColor);
 void clearScreen();
 
+
+RGB color_map[HEIGHT][WIDTH];
 int main(){
-	
+    for(int i=0;i<HEIGHT;i++){
+        for(int j=0;j<WIDTH;j++) {
+            color_map[i][j].cR = 255;
+            color_map[i][j].cG = 255;
+            color_map[i][j].cB = 255;
+        }
+    }
 	init();
 	clearScreen();
 	startDevice();
-	
 	int xMouse = 0, yMouse = 0;
 	while(1){
-		Mice pMouse = mouseController();
-		clearScreen();
+        FdMice mouseCont = mouseController();
+        Mice pMouse = mouseCont.mice;
+        int fd = mouseCont.fd;
+        clearScreen();
 		xMouse = (xMouse+pMouse.coorMouse.x > WIDTH) ?WIDTH :((xMouse+pMouse.coorMouse.x < 0) ?0 :(xMouse+pMouse.coorMouse.x));
 		yMouse = (yMouse+pMouse.coorMouse.y > HEIGHT) ?HEIGHT :((yMouse+pMouse.coorMouse.y < 0) ?0 :(yMouse+pMouse.coorMouse.y));
 		setPointer(xMouse, yMouse);
+        if(pMouse.clicked==1 && yMouse >=0 && yMouse< HEIGHT && xMouse >=0 && yMouse < WIDTH) {
+            color_map[yMouse][xMouse].cR = 0;
+            color_map[yMouse][xMouse].cG = 0;
+            color_map[yMouse][xMouse].cB = 0;
+        } 
+        close(fd);
+        // printf("%d %d %d\n", xMouse, yMouse, pMouse.clicked);
 	}
 }
 
@@ -86,7 +112,7 @@ point setPoint(int x, int y){
     return p;
 }
 
-Mice mouseController(){
+FdMice mouseController(){
 	int fd, bytes;
 	unsigned char data[3];
 	const char *mDevice = "/dev/input/mice";	//~ input mouse driver
@@ -109,7 +135,10 @@ Mice mouseController(){
 	Mice M;
 	M.coorMouse = setPoint(x, -y);
 	M.clicked = click; 
-	return M;
+    FdMice fdmice;
+    fdmice.mice = M;
+    fdmice.fd = fd;
+    return (fdmice);
 }
 
 void swap(int* a, int* b){
@@ -195,7 +224,7 @@ void drawLine(point p1, point p2, int thickness, int colorR, int colorG, int col
 void clearScreen() {
     for (int h = 0; h < HEIGHT; h++){
         for (int w = 0; w < WIDTH; w++) {
-			printPixel(w,h,255,255,255);
+			printPixel(w,h,color_map[h][w].cR,color_map[h][w].cG,color_map[h][w].cB);
         }
     }
 }
