@@ -119,7 +119,6 @@ Mice mouseController(){
 	
 	   fd = open(mDevice, O_RDWR);
 
-	printf("fd: %d",fd);
 	if (fd == -1){
 		printf("Hello Error");
 		//~ return -1;
