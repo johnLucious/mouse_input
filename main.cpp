@@ -26,6 +26,8 @@ char *fbp = 0;
 int fbfd = 0;
 long int screensize = 0;
 long int location = 0;
+const char *mDevice = "/dev/input/mice";	//~ input mouse driver
+int fd;
 
 typedef struct{
     int x, y;
@@ -53,7 +55,7 @@ void getPixelColor(int x, int y, int *rColor, int *gColor, int *bColor);
 void clearScreen();
 
 int main(){
-	
+	fd = open(mDevice, O_RDWR);
 	init();
 	clearScreen();
 	startDevice();
@@ -87,11 +89,12 @@ point setPoint(int x, int y){
 }
 
 Mice mouseController(){
-	int fd, bytes;
+	int bytes;
 	unsigned char data[3];
-	const char *mDevice = "/dev/input/mice";	//~ input mouse driver
 	
-	fd = open(mDevice, O_RDWR);
+	
+	
+	printf("fd: %d",fd);
 	if (fd == -1){
 		printf("Hello Error");
 		//~ return -1;
@@ -100,6 +103,7 @@ Mice mouseController(){
 	signed char x, y;
 	
 	bytes = read(fd, data, sizeof(data));
+
 	if (bytes > 0){
 		click = data[0] & 0x1;				//~ Left click
 		x = data[1];						//~ x coordinate
@@ -107,6 +111,7 @@ Mice mouseController(){
 		//~ printf("x=%d, y=%d, click=%d\n", x, y, click);
 	}
 	Mice M;
+	printf("x: %d y: %d\n",x,-y);
 	M.coorMouse = setPoint(x, -y);
 	M.clicked = click; 
 	return M;
@@ -150,7 +155,7 @@ void init(){
 
     // Map the device to memory
     fbp = (char *)mmap(0, screensize, PROT_READ | PROT_WRITE, MAP_SHARED, fbfd, 0);
-    if ((int)fbp == -1) {
+    if ((int)atoi(fbp) == -1) {
         perror("Error: failed to map framebuffer device to memory");
         exit(4);
     }
